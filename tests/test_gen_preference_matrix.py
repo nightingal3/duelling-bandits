@@ -42,10 +42,17 @@ class TestPreferenceMatrix:
         [1, 0, 2],
         [2, 1, 0]])
         self.pm.set_matrix_explicit(no_winner)
-        print(self.pm.num_observations)
         assert self.pm.condorcet_winner() == -1
         
-        
+    def test_get_condorcet_winner_exists(self):
+        self.pm.reset_state()
+        winner = np.array([[0, 186, 405],
+        [305, 0, 272],
+        [78, 105, 0]]) #example is from wikipedia (Condorcet criterion)
+
+        self.pm.set_matrix_explicit(winner)
+        print(self.pm.num_observations)
+        assert self.pm.condorcet_winner() == 1
 
 
 

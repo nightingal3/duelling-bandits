@@ -19,7 +19,7 @@ class PreferenceMatrix:
         self.data = np.zeros((self.num_actions, self.num_actions))
         self.curr_condorcet_winner = None
         self.num_observations = np.array([0] * self.num_actions)
-        
+
     def set_matrix_explicit(self, matrix) -> None:
         if not isinstance(matrix, np.ndarray) or matrix.shape != (self.num_actions, self.num_actions):
             raise Exception("Matrix must be an ndarray with shape (num_actions, num_actions)")
@@ -36,18 +36,17 @@ class PreferenceMatrix:
 
     def condorcet_winner(self) -> int:
         if self.curr_condorcet_winner == None:
-            highest = 0
-            winner = None
             for i in range(self.num_actions):
-                if sum(self.data[i, :]) > 0.5 * self.num_observations[i] and sum(self.data[i, :]) > highest:
-                    highest = sum(self.data[i, :])
-                    winner = i
-
-            if winner:
-                self.curr_condorcet_winner = winner
-                return winner
+                for j in range(self.num_actions):
+                    if i == j:
+                        continue
+                    if self.data[j, i] >= self.data[i, j]:
+                        break
+                    if j == self.num_actions - 1:
+                        self.curr_condorcet_winner = i
+                        return i
             return -1
-                    
+            
         else:
             return self.curr_condorcet_winner
 
