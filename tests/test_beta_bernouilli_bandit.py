@@ -28,4 +28,4 @@ class TestBetaBernoulliBandit:
         self.bandit.reset_state()
         self.bandit.change_wins(5)
         self.bandit.change_losses(10)
-        assert self.bandit.expected_value() == 1/3
+        assert self.bandit.expected_value() == 6/17

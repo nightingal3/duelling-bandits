@@ -25,7 +25,7 @@ class BetaBernouilliBandit:
         self.losses = 0
 
     def expected_value(self) -> float:
-        return self.wins / (self.wins + self.losses)
+        return self.wins + 1 / (self.wins + self.losses + 2)
 
     def draw(self) -> float:
-        return np.random.beta(self.wins, self.losses)
+        return np.random.beta(self.wins + 1, self.losses + 1)
