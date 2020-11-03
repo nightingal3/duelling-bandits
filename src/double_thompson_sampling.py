@@ -22,6 +22,8 @@ class DoubleThompsonSamplingPolicy:
                 for j in range(i, preference_matrix.shape[0])
                 if j != i
             }
+        self.upper_conf_bound = np.zeros((self.num_actions, self.num_actions))
+        self.lower_conf_bound = np.zeros((self.num_actions, self.num_actions))
         print(self.bandits)
 
     def choose_actions(self):
@@ -31,9 +33,14 @@ class DoubleThompsonSamplingPolicy:
             1 if uniform(0, 1) < self.preference_matrix[first_action][second_action]
             else 0
         )
-        self.bandits[first_action][second_action].update_success_or_failure(reward)
-        self.bandits[second_action][first_action].update_success_or_failure(1 - reward)
+        if first_action < second_action:
+            self.bandits[first_action][second_action].update_success_or_failure(reward)
+        else:
+            self.bandits[second_action][first_action].update_success_or_failure(1 - reward)
+
+        #self.bandits[second_action][first_action].update_success_or_failure(1 - reward)
         self.timestep += 1
+        return first_action, second_action
 
     def choose_first_action(self):
         upper_conf_bound = np.zeros((self.num_actions, self.num_actions))
@@ -53,18 +60,18 @@ class DoubleThompsonSamplingPolicy:
                     history = 1
                     cb = 1
                 else:
-                    history[i][j] = wins/(wins + losses)
+                    history = wins/(wins + losses)
                     cb = sqrt((self.alpha * log(self.timestep))/(wins + losses))
 
                 upper_conf_bound[i][j] = history + cb
                 lower_conf_bound[i][j] = history - cb
 
-        print(upper_conf_bound)
-        print(lower_conf_bound)                
+        #print(upper_conf_bound)
+        #print(lower_conf_bound)                
 
         copeland_ub = (1/(self.preference_matrix.shape[0] - 1)) * np.sum(upper_conf_bound, axis=1)
         candidates = np.argwhere(copeland_ub==np.amax(copeland_ub))
-        print(candidates)
+        #print(candidates)
 
         estimated_samples = np.zeros(self.rewards_matrix.shape)
         for i in range(self.rewards_matrix.shape[0]):
@@ -72,7 +79,7 @@ class DoubleThompsonSamplingPolicy:
                 estimated_samples[i][j] = self.bandits[i][j].draw()
                 estimated_samples[j][i] = 1 - estimated_samples[i][j]
 
-        print(estimated_samples)
+        #print(estimated_samples)
 
         likely_wins = np.zeros(self.rewards_matrix.shape)
         for c in candidates:
@@ -84,12 +91,38 @@ class DoubleThompsonSamplingPolicy:
                     likely_wins[i][j] = 1
 
         action = np.random.choice(np.argwhere(likely_wins==np.amax(likely_wins))[0]) # break ties randomly
-        print(action)
         return action
 
     def choose_second_action(self, first_action: int):
-        pass
+        expected_samples = np.zeros(self.rewards_matrix.shape)
+        for i in range(self.num_actions):
+            if i == first_action:
+                continue
+            if i < first_action:
+                expected_samples[i][first_action] = self.bandits[i][first_action].draw()
+            else:
+                expected_samples[i][first_action] = 1 - self.bandits[first_action][i].draw()
 
+
+        uncertain_pairs = np.zeros((self.num_actions, 1))
+        for i in range(self.num_actions):
+            if i == first_action:
+                continue
+            if self.lower_conf_bound[i][first_action] <= 1/2:
+                uncertain_pairs[i] = expected_samples[i][first_action]
+        
+        action = np.argmax(uncertain_pairs)
+        if action == first_action:
+            pdb.set_trace()
+        return action 
+
+    def return_preferences_from_duel_history(self):
+        predicted_pref_matrix = np.zeros(self.rewards_matrix.shape)
+        for i in self.bandits:
+            for j in self.bandits[i]:
+                predicted_pref_matrix[i][j] = self.bandits[i][j].wins / (self.bandits[i][j].wins + self.bandits[i][j].losses)
+                predicted_pref_matrix[j][i] = self.bandits[i][j].losses / (self.bandits[i][j].wins + self.bandits[i][j].losses)
+        return predicted_pref_matrix
 
 if __name__ == "__main__":
     pm = PreferenceMatrix(num_actions=4)
@@ -98,7 +131,13 @@ if __name__ == "__main__":
     [0.4, 0.1, 0.5, 0.5],
     [0.6, 0.7, 0.5, 0.5]]))
     sampler = DoubleThompsonSamplingPolicy(preference_matrix=pm)
-    sampler.choose_first_action()
+    for _ in range(10000):
+        actions = sampler.choose_actions()
+        print(actions)
+    print(sampler.bandits)
+    preds = sampler.return_preferences_from_duel_history()
+    print(preds)
+   
    
 
 

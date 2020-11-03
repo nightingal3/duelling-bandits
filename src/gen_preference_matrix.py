@@ -1,5 +1,4 @@
-from dataclasses import dataclass, field
-#from itertools import product, combinations
+from dataclasses import dataclass
 import numpy as np
 
 def init_preference_matrix(num_actions: int, num_criteria: int) -> np.ndarray:
@@ -15,6 +14,9 @@ class PreferenceMatrix:
         self.curr_condorcet_winner = None
         self.num_observations = np.array([0] * self.num_actions)
         self.shape = (self.num_actions, self.num_actions)
+    
+    def __getitem__(self, ind):
+        return self.data[ind]
 
     def reset_state(self) -> None:
         self.data = np.zeros((self.num_actions, self.num_actions))
