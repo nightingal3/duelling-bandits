@@ -27,6 +27,7 @@ class ThompsonSamplingPolicy:
         self.bandist = []
         for _ in range(len(self.means_list)):
             self.bandits.append(BetaBernouilliBandit())
+        self.rewards_list = []
 
 
 if __name__== "__main__":

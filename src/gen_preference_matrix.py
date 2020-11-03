@@ -14,6 +14,7 @@ class PreferenceMatrix:
         self.data = init_preference_matrix(self.num_actions, self.num_criteria)
         self.curr_condorcet_winner = None
         self.num_observations = np.array([0] * self.num_actions)
+        self.shape = (self.num_actions, self.num_actions)
 
     def reset_state(self) -> None:
         self.data = np.zeros((self.num_actions, self.num_actions))
@@ -46,7 +47,7 @@ class PreferenceMatrix:
                         self.curr_condorcet_winner = i
                         return i
             return -1
-            
+
         else:
             return self.curr_condorcet_winner
 

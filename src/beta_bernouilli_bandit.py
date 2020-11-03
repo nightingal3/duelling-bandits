@@ -6,6 +6,12 @@ class BetaBernouilliBandit:
         self.wins = wins
         self.losses = losses
 
+    def __str__(self):
+        return f"Beta Bernouilli Bandit:\nnum wins: {self.wins}\nnum losses: {self.losses}"
+    
+    def __repr__(self):
+        return f"<BetaBernouilliBandit wins:{self.wins} losses:{self.losses}>"
+
     def update_success_or_failure(self, reward: int) -> None:
         if reward not in [0, 1]:
             raise ValueError("Only binary (0/1) success values accepted. To overwrite success/failure count, use change_wins/change_losses.")
