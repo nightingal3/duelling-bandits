@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 import numpy as np
+from typing import List
 
 def init_preference_matrix(num_actions: int, num_criteria: int) -> np.ndarray:
     return np.zeros((num_actions, num_actions))
@@ -52,8 +53,9 @@ class PreferenceMatrix:
 
         else:
             return self.curr_condorcet_winner
-
-
+    
+    def borda_winner(self) -> np.ndarray:
+        return np.argwhere(np.sum(self.data, axis=1)==np.amax(np.sum(self.data, axis=1)))
 
 if __name__ == "__main__":
     matrix = PreferenceMatrix(num_actions=2, num_criteria=1)

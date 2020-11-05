@@ -1,3 +1,4 @@
+from itertools import combinations
 from math import sqrt, log
 import numpy as np
 from random import uniform
@@ -5,8 +6,6 @@ from random import uniform
 from beta_bernouilli_bandit import BetaBernouilliBandit
 from thompson_sampling import ThompsonSamplingPolicy
 from gen_preference_matrix import PreferenceMatrix
-
-import pdb
 
 class DoubleThompsonSamplingPolicy:
     def __init__(self, preference_matrix: PreferenceMatrix, alpha: float = 0.001):
@@ -130,13 +129,18 @@ if __name__ == "__main__":
     [0.2, 0.5, 0.9, 0.3],
     [0.4, 0.1, 0.5, 0.5],
     [0.6, 0.7, 0.5, 0.5]]))
-    sampler = DoubleThompsonSamplingPolicy(preference_matrix=pm)
-    for _ in range(10000):
+    sampler = DoubleThompsonSamplingPolicy(preference_matrix=pm, alpha=1e-32)
+    actions_arr = {}
+
+    for _ in range(100000):
         actions = sampler.choose_actions()
-        print(actions)
-    print(sampler.bandits)
-    preds = sampler.return_preferences_from_duel_history()
-    print(preds)
+        #print(actions)
+        if actions not in actions_arr:
+            actions_arr[actions] = 1
+        else:
+            actions_arr[actions] += 1
+    print(actions_arr)
+    print(sampler.return_preferences_from_duel_history())
    
    
 
