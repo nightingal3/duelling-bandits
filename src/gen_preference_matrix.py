@@ -9,13 +9,17 @@ def init_preference_matrix(num_actions: int, num_criteria: int) -> np.ndarray:
 class PreferenceMatrix:
     num_actions: int
     num_criteria: int = 1
+    data: np.ndarray = None
 
     def __post_init__(self):
-        self.data = init_preference_matrix(self.num_actions, self.num_criteria)
-        self.curr_condorcet_winner = None
-        self.num_observations = np.array([0] * self.num_actions)
-        self.shape = (self.num_actions, self.num_actions)
-    
+        if self.data is None:
+            self.data = init_preference_matrix(self.num_actions, self.num_criteria)
+            self.curr_condorcet_winner = None
+            self.num_observations = np.array([0] * self.num_actions)
+            self.shape = (self.num_actions, self.num_actions)
+        else:
+            self.set_matrix_explicit(self.data)
+            
     def __getitem__(self, ind):
         return self.data[ind]
 
@@ -28,6 +32,7 @@ class PreferenceMatrix:
         if not isinstance(matrix, np.ndarray) or matrix.shape != (self.num_actions, self.num_actions):
             raise Exception("Matrix must be an ndarray with shape (num_actions, num_actions)")
         self.data = matrix
+        self.shape = matrix.shape
         self.curr_condorcet_winner = None
         self.num_observations = np.array([np.sum(self.data[i, :]) + np.sum(self.data[i, :]) - self.data[i, i] for i in range(self.num_actions)])
 
