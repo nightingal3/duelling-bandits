@@ -61,6 +61,9 @@ class PreferenceMatrix:
     
     def borda_winner(self) -> np.ndarray:
         return np.argwhere(np.sum(self.data, axis=1)==np.amax(np.sum(self.data, axis=1)))
+    
+    def borda_score(self, action: int) -> float:
+        return np.sum(self.data, axis=1)[action]
 
 if __name__ == "__main__":
     matrix = PreferenceMatrix(num_actions=2, num_criteria=1)

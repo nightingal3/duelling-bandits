@@ -15,6 +15,7 @@ class DoubleThompsonSamplingPolicy:
         self.rewards_matrix = np.zeros(preference_matrix.shape)
         self.alpha = alpha
         self.timestep = 1
+        self.rewards_over_time = []
         self.bandits = {}
         self.num_actions = preference_matrix.shape[0]
         for i in range(preference_matrix.shape[0]):
@@ -30,6 +31,7 @@ class DoubleThompsonSamplingPolicy:
     def choose_actions(self):
         first_action = self.choose_first_action()
         second_action = self.choose_second_action(first_action)
+        self.update_borda_reward(first_action, second_action)
         reward = (
             1 if uniform(0, 1) < self.preference_matrix[first_action][second_action]
             else 0
@@ -39,7 +41,6 @@ class DoubleThompsonSamplingPolicy:
         else:
             self.bandits[second_action][first_action].update_success_or_failure(1 - reward)
 
-        #self.bandits[second_action][first_action].update_success_or_failure(1 - reward)
         self.timestep += 1
         return first_action, second_action
 
@@ -116,6 +117,12 @@ class DoubleThompsonSamplingPolicy:
         if action == first_action:
             pdb.set_trace()
         return action 
+    
+    def update_borda_reward(self, first_action: int, second_action: int) -> None:
+        total_reward = 0
+        total_reward += self.preference_matrix.borda_score(first_action)
+        total_reward += self.preference_matrix.borda_score(second_action)
+        self.rewards_over_time.append(total_reward)
 
     def return_preferences_from_duel_history(self):
         predicted_pref_matrix = np.zeros(self.rewards_matrix.shape)
@@ -137,7 +144,7 @@ class DoubleThompsonSamplingPolicy:
         powers = []
         for action1 in range(self.num_actions):
             for action2 in range(action1 + 1, self.num_actions):
-                powers.append(self.get_power(effect_size, action1, action2))
+                powers.append((self.get_power(effect_size, action1, action2), action1, action2))
         
         return powers
                 

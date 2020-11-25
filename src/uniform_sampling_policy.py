@@ -10,6 +10,7 @@ class UniformSamplingPolicy:
     def __init__(self, preference_matrix: PreferenceMatrix):
         self.preference_matrix = preference_matrix
         self.timestep = 1
+        self.rewards_over_time = []
         self.num_actions = preference_matrix.shape[0]
         self.wins = np.zeros((self.num_actions, self.num_actions))
         self.losses = np.zeros((self.num_actions, self.num_actions))
@@ -20,6 +21,7 @@ class UniformSamplingPolicy:
             1 if uniform(0, 1) < self.preference_matrix[first_action][second_action]
             else 0
         )
+        self.update_borda_reward(first_action, second_action)
         self.update_with_reward(first_action, second_action, reward)
         return first_action, second_action
 
@@ -29,6 +31,12 @@ class UniformSamplingPolicy:
         else:
             self.wins[second_action][first_action] += 1 - reward
     
+    def update_borda_reward(self, first_action: int, second_action: int) -> None:
+        total_reward = 0
+        total_reward += self.preference_matrix.borda_score(first_action)
+        total_reward += self.preference_matrix.borda_score(second_action)
+        self.rewards_over_time.append(total_reward)    
+
     def get_power(self, effect_size, action1, action2) -> float:
         power = GofChisquarePower().solve_power(effect_size=effect_size, nobs=self.wins[action1][action2] + self.wins[action2][action1], alpha=0.05, n_bins=2)
         return power
@@ -37,7 +45,7 @@ class UniformSamplingPolicy:
         powers = []
         for action1 in range(self.num_actions):
             for action2 in range(action1 + 1, self.num_actions):
-                powers.append(self.get_power(effect_size, action1, action2))
+                powers.append((self.get_power(effect_size, action1, action2), action1, action2))
         
         return powers
 
