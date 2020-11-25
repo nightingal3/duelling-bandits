@@ -1,6 +1,8 @@
 from itertools import combinations
 import numpy as np
 from random import uniform, choice
+from statsmodels.stats.power import GofChisquarePower
+from typing import List
 
 from gen_preference_matrix import PreferenceMatrix
 
@@ -9,6 +11,8 @@ class UniformSamplingPolicy:
         self.preference_matrix = preference_matrix
         self.timestep = 1
         self.num_actions = preference_matrix.shape[0]
+        self.wins = np.zeros((self.num_actions, self.num_actions))
+        self.losses = np.zeros((self.num_actions, self.num_actions))
 
     def choose_actions(self):
         first_action, second_action = choice(list(combinations(range(self.num_actions), 2)))
@@ -16,7 +20,27 @@ class UniformSamplingPolicy:
             1 if uniform(0, 1) < self.preference_matrix[first_action][second_action]
             else 0
         )
+        self.update_with_reward(first_action, second_action, reward)
         return first_action, second_action
+
+    def update_with_reward(self, first_action, second_action, reward) -> None:
+        if first_action < second_action:
+            self.wins[first_action][second_action] += reward
+        else:
+            self.wins[second_action][first_action] += 1 - reward
+    
+    def get_power(self, effect_size, action1, action2) -> float:
+        power = GofChisquarePower().solve_power(effect_size=effect_size, nobs=self.wins[action1][action2] + self.wins[action2][action1], alpha=0.05, n_bins=2)
+        return power
+
+    def get_all_power(self, effect_size: float) -> List:
+        powers = []
+        for action1 in range(self.num_actions):
+            for action2 in range(action1 + 1, self.num_actions):
+                powers.append(self.get_power(effect_size, action1, action2))
+        
+        return powers
+
 
 if __name__ == "__main__":
     pm = PreferenceMatrix(num_actions=4)

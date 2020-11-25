@@ -2,6 +2,8 @@ from itertools import combinations
 from math import sqrt, log
 import numpy as np
 from random import uniform
+from statsmodels.stats.power import GofChisquarePower
+from typing import List
 
 from beta_bernouilli_bandit import BetaBernouilliBandit
 from thompson_sampling import ThompsonSamplingPolicy
@@ -122,6 +124,25 @@ class DoubleThompsonSamplingPolicy:
                 predicted_pref_matrix[i][j] = self.bandits[i][j].wins / (self.bandits[i][j].wins + self.bandits[i][j].losses)
                 predicted_pref_matrix[j][i] = self.bandits[i][j].losses / (self.bandits[i][j].wins + self.bandits[i][j].losses)
         return predicted_pref_matrix
+
+    def get_power(self, effect_size: float, action1: int, action2: int) -> float:
+        if action1 < action2:
+            power = GofChisquarePower().solve_power(effect_size=effect_size, nobs=self.bandits[action1][action2].wins + self.bandits[action1][action2].losses, alpha=0.05, n_bins=2)
+        else:
+            power = GofChisquarePower().solve_power(effect_size=effect_size, nobs=self.bandits[action2][action1].wins + self.bandits[action2][action1].losses, alpha=0.05, n_bins=2)
+
+        return power
+    
+    def get_all_power(self, effect_size: float) -> List:
+        powers = []
+        for action1 in range(self.num_actions):
+            for action2 in range(action1 + 1, self.num_actions):
+                powers.append(self.get_power(effect_size, action1, action2))
+        
+        return powers
+                
+
+
 
 if __name__ == "__main__":
     pm = PreferenceMatrix(num_actions=4)
