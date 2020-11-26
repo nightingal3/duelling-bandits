@@ -13,7 +13,6 @@ class UniformSamplingPolicy:
         self.rewards_over_time = []
         self.num_actions = preference_matrix.shape[0]
         self.wins = np.zeros((self.num_actions, self.num_actions))
-        self.losses = np.zeros((self.num_actions, self.num_actions))
 
     def choose_actions(self):
         first_action, second_action = choice(list(combinations(range(self.num_actions), 2)))
@@ -26,10 +25,10 @@ class UniformSamplingPolicy:
         return first_action, second_action
 
     def update_with_reward(self, first_action, second_action, reward) -> None:
-        if first_action < second_action:
-            self.wins[first_action][second_action] += reward
+        if reward:
+            self.wins[first_action][second_action] += 1
         else:
-            self.wins[second_action][first_action] += 1 - reward
+            self.wins[second_action][first_action] += 1
     
     def update_borda_reward(self, first_action: int, second_action: int) -> None:
         total_reward = 0
