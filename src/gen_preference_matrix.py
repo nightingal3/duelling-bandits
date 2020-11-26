@@ -47,8 +47,6 @@ class PreferenceMatrix:
     def condorcet_winner(self) -> int:
         if self.curr_condorcet_winner == None:
             for i in range(self.num_actions):
-                #if i == 2:
-                    #pdb.set_trace()
                 for j in range(self.num_actions):
                     if i == j:
                         continue

@@ -26,7 +26,6 @@ class DoubleThompsonSamplingPolicy:
             }
         self.upper_conf_bound = np.zeros((self.num_actions, self.num_actions))
         self.lower_conf_bound = np.zeros((self.num_actions, self.num_actions))
-        print(self.bandits)
 
     def choose_actions(self):
         first_action = self.choose_first_action()
