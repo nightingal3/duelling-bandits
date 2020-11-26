@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 import numpy as np
 from typing import List
+import pdb
 
 def init_preference_matrix(num_actions: int, num_criteria: int) -> np.ndarray:
     return np.zeros((num_actions, num_actions))
@@ -46,12 +47,14 @@ class PreferenceMatrix:
     def condorcet_winner(self) -> int:
         if self.curr_condorcet_winner == None:
             for i in range(self.num_actions):
+                #if i == 2:
+                    #pdb.set_trace()
                 for j in range(self.num_actions):
                     if i == j:
                         continue
                     if self.data[j, i] >= self.data[i, j]:
                         break
-                    if j == self.num_actions - 1:
+                    if j == self.num_actions - 1 or (j == self.num_actions - 2 and i == self.num_actions - 1):
                         self.curr_condorcet_winner = i
                         return i
             return -1
