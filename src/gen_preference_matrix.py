@@ -3,8 +3,10 @@ import numpy as np
 from typing import List
 import pdb
 
+
 def init_preference_matrix(num_actions: int, num_criteria: int) -> np.ndarray:
     return np.zeros((num_actions, num_actions))
+
 
 @dataclass
 class PreferenceMatrix:
@@ -20,7 +22,7 @@ class PreferenceMatrix:
             self.shape = (self.num_actions, self.num_actions)
         else:
             self.set_matrix_explicit(self.data)
-            
+
     def __getitem__(self, ind):
         return self.data[ind]
 
@@ -30,15 +32,25 @@ class PreferenceMatrix:
         self.num_observations = np.array([0] * self.num_actions)
 
     def set_matrix_explicit(self, matrix) -> None:
-        if not isinstance(matrix, np.ndarray) or matrix.shape != (self.num_actions, self.num_actions):
-            raise Exception("Matrix must be an ndarray with shape (num_actions, num_actions)")
+        if not isinstance(matrix, np.ndarray) or matrix.shape != (
+            self.num_actions,
+            self.num_actions,
+        ):
+            raise Exception(
+                "Matrix must be an ndarray with shape (num_actions, num_actions)"
+            )
         self.data = matrix
         self.shape = matrix.shape
         self.curr_condorcet_winner = None
-        self.num_observations = np.array([np.sum(self.data[i, :]) + np.sum(self.data[i, :]) - self.data[i, i] for i in range(self.num_actions)])
+        self.num_observations = np.array(
+            [
+                np.sum(self.data[i, :]) + np.sum(self.data[i, :]) - self.data[i, i]
+                for i in range(self.num_actions)
+            ]
+        )
 
     def record_win(self, winner: int, loser: int) -> None:
-        if winner != self.curr_condorcet_winner: 
+        if winner != self.curr_condorcet_winner:
             self.curr_condorcet_winner = None
         self.data[winner, loser] += 1
         self.num_observations[winner] += 1
@@ -52,21 +64,25 @@ class PreferenceMatrix:
                         continue
                     if self.data[j, i] >= self.data[i, j]:
                         break
-                    if j == self.num_actions - 1 or (j == self.num_actions - 2 and i == self.num_actions - 1):
+                    if j == self.num_actions - 1 or (
+                        j == self.num_actions - 2 and i == self.num_actions - 1
+                    ):
                         self.curr_condorcet_winner = i
                         return i
             return -1
 
         else:
             return self.curr_condorcet_winner
-    
+
     def borda_winner(self) -> np.ndarray:
-        return np.argwhere(np.sum(self.data, axis=1)==np.amax(np.sum(self.data, axis=1)))
-    
+        return np.argwhere(
+            np.sum(self.data, axis=1) == np.amax(np.sum(self.data, axis=1))
+        )
+
     def borda_score(self, action: int) -> float:
         return np.sum(self.data, axis=1)[action]
+
 
 if __name__ == "__main__":
     matrix = PreferenceMatrix(num_actions=2, num_criteria=1)
     print(matrix.num_observations)
-

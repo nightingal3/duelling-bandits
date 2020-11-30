@@ -4,6 +4,7 @@ from typing import List
 
 from beta_bernouilli_bandit import BetaBernouilliBandit
 
+
 class ThompsonSamplingPolicy:
     def __init__(self, means_list: List):
         self.bandits = []
@@ -22,7 +23,7 @@ class ThompsonSamplingPolicy:
 
     def update_bandit(self, bandit_ind, reward):
         self.bandits[bandit_ind].update_success_or_failure(reward)
-    
+
     def reset_state(self):
         self.bandist = []
         for _ in range(len(self.means_list)):
@@ -30,7 +31,7 @@ class ThompsonSamplingPolicy:
         self.rewards_list = []
 
 
-if __name__== "__main__":
+if __name__ == "__main__":
     sampler = ThompsonSamplingPolicy(means_list=[0.25, 0.3, 0.5, 0.35])
     for _ in range(0, 1000):
         sampler.choose_action()
