@@ -70,6 +70,9 @@ class DoubleThompsonSamplingPolicy:
 
                 upper_conf_bound[i][j] = history + cb
                 lower_conf_bound[i][j] = history - cb
+                
+        self.upper_conf_bound = upper_conf_bound
+        self.lower_conf_bound = lower_conf_bound
 
         copeland_ub = (1 / (self.preference_matrix.shape[0] - 1)) * np.sum(
             upper_conf_bound, axis=1
