@@ -49,6 +49,31 @@ class PreferenceMatrix:
             ]
         )
 
+    def set_matrix_random(self) -> None:
+        pm_list = [[]] * self.num_actions
+
+        for i in range(0, self.num_actions):
+            pm_list[i] = [0] * self.num_actions
+            for j in range(0, self.num_actions):
+                if i == j:
+                    pm_list[i][j] = 0 # do not allow self-duel.
+                elif i > j:
+                    pm_list[i][j] = 1 - pm_list[j][i]
+                else:
+                    pm_list[i][j] = np.random.rand()
+
+        matrix = np.array(pm_list)
+        self.data = matrix
+        self.shape = matrix.shape
+        self.curr_condorcet_winner = None
+        self.num_observations = np.array(
+            [
+                np.sum(self.data[i, :]) + np.sum(self.data[i, :]) - self.data[i, i]
+                for i in range(self.num_actions)
+            ]
+        )        
+
+
     def record_win(self, winner: int, loser: int) -> None:
         if winner != self.curr_condorcet_winner:
             self.curr_condorcet_winner = None
