@@ -71,7 +71,49 @@ class PreferenceMatrix:
                 np.sum(self.data[i, :]) + np.sum(self.data[i, :]) - self.data[i, i]
                 for i in range(self.num_actions)
             ]
-        )        
+        )
+
+    def set_matrix_random_with_condorcet_winner(self, effect_size) -> None:
+        # (0, 0) will be the condorcet winner, for each P(0, i), P(0, i) > 0.5.
+        pm_list = [[]] * self.num_actions
+        for i in range(0, self.num_actions):
+            pm_list[i] = [0] * self.num_actions
+
+        pm_list[0][0] = 0.5
+        for j in range(1, self.num_actions):
+            random_number = 0.5
+            while random_number == 0.5:
+                random_number = np.random.rand()
+            random_number = random_number if random_number > 0.5 else 1 - random_number
+            pm_list[0][j] = random_number
+            pm_list[j][0] = 1 - random_number
+
+
+        winner_frequency = 0.5 + (effect_size / 2)
+        loser_frequency = 1 - winner_frequency
+        # for other arms, we let the effect size consistent.
+        for i in range(1, self.num_actions):
+            for j in range(i, self.num_actions):
+                if i == j:
+                    pm_list[i][j] = 0.5
+                    continue
+                winner = np.random.choice([0,1])
+                pm_list[i][j] = winner_frequency if winner == 0 else loser_frequency
+                pm_list[j][i] = winner_frequency if winner == 1 else loser_frequency
+
+        matrix = np.array(pm_list)
+        self.data = matrix
+        self.shape = matrix.shape
+        self.curr_condorcet_winner = None
+        self.num_observations = np.array(
+            [
+                np.sum(self.data[i, :]) + np.sum(self.data[i, :]) - self.data[i, i]
+                for i in range(self.num_actions)
+            ]
+        )
+
+        
+
 
 
     def record_win(self, winner: int, loser: int) -> None:
