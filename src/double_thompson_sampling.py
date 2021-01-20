@@ -9,6 +9,8 @@ from beta_bernouilli_bandit import BetaBernouilliBandit
 from thompson_sampling import ThompsonSamplingPolicy
 from gen_preference_matrix import PreferenceMatrix
 
+import pdb
+
 
 class DoubleThompsonSamplingPolicy:
     def __init__(self, preference_matrix: PreferenceMatrix, alpha: float = 0.001):
@@ -53,6 +55,8 @@ class DoubleThompsonSamplingPolicy:
         for i in range(self.num_actions):
             for j in range(self.num_actions):
                 if j == i:
+                    upper_conf_bound[i][j] = 0.5
+                    lower_conf_bound[i][j] = 0.5
                     continue
                 if j < i:
                     wins = self.bandits[j][i].losses
@@ -74,9 +78,22 @@ class DoubleThompsonSamplingPolicy:
         self.upper_conf_bound = upper_conf_bound
         self.lower_conf_bound = lower_conf_bound
 
-        copeland_ub = (1 / (self.preference_matrix.shape[0] - 1)) * np.sum(
-            upper_conf_bound, axis=1
-        )
+        
+        # copeland_ub = (1 / (self.preference_matrix.shape[0] - 1)) * np.sum(
+        #     upper_conf_bound, axis=1
+        # )
+
+        copeland_ub = np.zeros(self.num_actions)
+
+        for i in range(0, self.num_actions):
+            copeland_score = 0
+            for j in range(0, self.num_actions):
+                if i == j:
+                    continue;
+                elif upper_conf_bound[i][j] > 0.5:
+                    copeland_score += 1
+            copeland_ub[i] = copeland_score
+
         candidates = np.argwhere(copeland_ub == np.amax(copeland_ub))
 
         estimated_samples = np.zeros(self.rewards_matrix.shape)
@@ -86,13 +103,12 @@ class DoubleThompsonSamplingPolicy:
                 estimated_samples[j][i] = 1 - estimated_samples[i][j]
 
         likely_wins = np.zeros(self.rewards_matrix.shape)
+
         for c in candidates:
-            i = c[0]
             for j in range(self.num_actions):
-                if i == j:
-                    continue
                 if estimated_samples[i][j] > 1 / 2:
-                    likely_wins[i][j] = 1
+                    likely_wins[c] += 1
+                    
 
         action = np.random.choice(
             np.argwhere(likely_wins == np.amax(likely_wins))[0]
@@ -101,6 +117,7 @@ class DoubleThompsonSamplingPolicy:
 
     def choose_second_action(self, first_action: int):
         expected_samples = np.zeros(self.rewards_matrix.shape)
+        expected_samples[first_action][first_action] = 0.5
         for i in range(self.num_actions):
             if i == first_action:
                 continue
@@ -113,14 +130,15 @@ class DoubleThompsonSamplingPolicy:
 
         uncertain_pairs = np.zeros((self.num_actions, 1))
         for i in range(self.num_actions):
-            if i == first_action:
-                continue
-            if self.lower_conf_bound[i][first_action] <= 1 / 2:
+            if self.lower_conf_bound[i][first_action] < 1 / 2:
                 uncertain_pairs[i] = expected_samples[i][first_action]
 
         action = np.argmax(uncertain_pairs)
-        if action == first_action:
-            pdb.set_trace()
+        # if action == first_action:
+        #     pdb.set_trace()
+
+        while action == first_action:
+            action = action + 1
         return action
 
     def update_borda_reward(self, first_action: int, second_action: int) -> None:
@@ -184,14 +202,17 @@ if __name__ == "__main__":
             ]
         )
     )
-    sampler = DoubleThompsonSamplingPolicy(preference_matrix=pm, alpha=1e-32)
-    actions_arr = {}
 
-    for _ in range(100000):
-        actions = sampler.choose_actions()
-        if actions not in actions_arr:
-            actions_arr[actions] = 1
-        else:
-            actions_arr[actions] += 1
-    print(actions_arr)
-    print(sampler.return_preferences_from_duel_history())
+    #pm.set_matrix_random_with_condorcet_winner(0.1)
+    print(pm.num_observations)
+    # sampler = DoubleThompsonSamplingPolicy(preference_matrix=pm, alpha=1e-32)
+    # actions_arr = {}
+
+    # for _ in range(100000):
+    #     actions = sampler.choose_actions()
+    #     if actions not in actions_arr:
+    #         actions_arr[actions] = 1
+    #     else:
+    #         actions_arr[actions] += 1
+    # print(actions_arr)
+    # print(sampler.return_preferences_from_duel_history())
