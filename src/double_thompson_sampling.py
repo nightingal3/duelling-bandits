@@ -29,6 +29,8 @@ class DoubleThompsonSamplingPolicy:
             }
         self.upper_conf_bound = np.zeros((self.num_actions, self.num_actions))
         self.lower_conf_bound = np.zeros((self.num_actions, self.num_actions))
+        self.strong_regret = 0
+        self.weak_regret = 0
 
     def choose_actions(self):
         first_action = self.choose_first_action()
@@ -45,6 +47,10 @@ class DoubleThompsonSamplingPolicy:
             self.bandits[second_action][first_action].update_success_or_failure(
                 1 - reward
             )
+
+        self.strong_regret += self.get_epsilon(first_action)
+        self.strong_regret += self.get_epsilon(second_action)
+        self.weak_regret += min(self.get_epsilon(first_action), self.get_epsilon(second_action))
 
         self.timestep += 1
         return first_action, second_action
@@ -186,6 +192,10 @@ class DoubleThompsonSamplingPolicy:
                 )
 
         return powers
+
+    def get_epsilon(self, action):
+        best_arm = 0 # TODO: 
+        return self.preference_matrix[0][action] - 0.5
 
 
 if __name__ == "__main__":

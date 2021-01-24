@@ -151,5 +151,14 @@ class PreferenceMatrix:
 
 
 if __name__ == "__main__":
-    matrix = PreferenceMatrix(num_actions=2, num_criteria=1)
+    # matrix = PreferenceMatrix(num_actions=2, num_criteria=1)
+    
+    matrix = PreferenceMatrix(num_actions=4, num_criteria=1)
+
+    matrix.set_matrix_random_with_condorcet_winner(0.1)
+    print(matrix.condorcet_winner())
+    
+
+
+
     print(matrix.num_observations)

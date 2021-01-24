@@ -82,7 +82,7 @@ def pref_matrix_no_effect(num_actions: int) -> PreferenceMatrix:
     data = np.full((num_actions, num_actions), 0.5)
     np.fill_diagonal(data, 0)
     pm = PreferenceMatrix(num_actions=num_actions, data=data)
-    pdb.set_trace()
+    #pdb.set_trace()
     return pm
 
 
@@ -97,6 +97,9 @@ def run_simulation(
         pm = pref_matrix_from_effect_size(
             effect_size=effect_size, num_actions=num_actions
         )
+
+        # Comment the following code, if you don't want the winning frequency between the condorcer winnter and other arms to be random.
+        pm.set_matrix_random_with_condorcet_winner(effect_size)
     else:
         pm = pref_matrix_no_effect(num_actions)
 
@@ -110,6 +113,7 @@ def run_simulation(
     else:
         sample_size = estimate_sample_size(num_actions=num_actions, effect_size=0.3)
     combs = list(combinations(range(num_actions), 2))
+
 
     # convention: 1 means the victory of the arm with the lowest index
     rewards = {
@@ -227,7 +231,7 @@ def run_multi_simulations(
                 "p_val": [],
                 "proportion_condorcet": -1,
                 "final_power": [],
-                "power_over_time": [],
+                "power_over_time": []
             }
             for duel in possible_duels
         }
@@ -339,7 +343,9 @@ def run_multi_simulations(
                 out_f.write(
                     f"\tCombination {comb}: Found effect? {found_effect}\tTest stats: {t_stats}\tp-vals: {p_vals}\n"
                 )
-            out_f.write(f"Proportion Condorcet: {proportion_condorcet_ts}\n\n")
+            out_f.write(f"Proportion Condorcet: {proportion_condorcet_ts}\n")
+            out_f.write(f"Strong Regret: {policy_ts.strong_regret}\n")
+            out_f.write(f"Weak Regret: {policy_ts.weak_regret}\n\n")
 
     with open(sim_save_file, "wb") as save_f:
         pickle.dump(duel_log, save_f)
@@ -406,7 +412,7 @@ def plot_borda_reward_over_time(
 
 
 if __name__ == "__main__":
-    EFFECT_SIZE = 0
+    EFFECT_SIZE = 0.1
     NUM_ARMS = 3
     NUM_SIMULATIONS = 1000
     SAMPLE_SIZE_MULT = 1
