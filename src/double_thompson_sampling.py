@@ -130,15 +130,13 @@ class DoubleThompsonSamplingPolicy:
 
         uncertain_pairs = np.zeros((self.num_actions, 1))
         for i in range(self.num_actions):
+            if i == first_action:
+                uncertain_pairs[i] = -1 # do not allow self-dueling.
             if self.lower_conf_bound[i][first_action] < 1 / 2:
                 uncertain_pairs[i] = expected_samples[i][first_action]
 
         action = np.argmax(uncertain_pairs)
-        # if action == first_action:
-        #     pdb.set_trace()
 
-        while action == first_action:
-            action = action + 1
         return action
 
     def update_borda_reward(self, first_action: int, second_action: int) -> None:
