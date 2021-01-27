@@ -16,6 +16,7 @@ import pickle
 from uniform_sampling_policy import UniformSamplingPolicy
 from double_thompson_sampling import DoubleThompsonSamplingPolicy
 from gen_preference_matrix import PreferenceMatrix
+from dataset import Dataset
 
 import pdb
 
@@ -212,6 +213,9 @@ def run_multi_simulations(
         },
     }
 
+    # Init a time table for this round of simulations.
+    dataset = Dataset()
+
     for i in range(num_experiments):
         combinations_uni = {
             duel: {
@@ -321,7 +325,12 @@ def run_multi_simulations(
             power_over_time_ts
         )
 
+        # Write to the pytables.
+
+        dataset.update_effect_size_table(i, effect_size)
+        dataset.update_sample_size_table(i, num_timesteps)
         with open(sim_output_file, "a") as out_f:
+            print(i)
             out_f.write(f"=== SIMULATION NUMBER {i} === \n")
             out_f.write(f"Effect size: {effect_size}, Sample size: {num_timesteps}\n")
             out_f.write("Uniform:\n")
@@ -333,6 +342,10 @@ def run_multi_simulations(
                 out_f.write(
                     f"\tCombination {comb}: Found effect? {found_effect}\tTest stats: {t_stats}\tp-vals: {p_vals}\n"
                 )
+                # Update the Combination Table.
+                dataset.update_combination_table(i, comb[0], comb[1], found_effect, 0, t_stats, p_vals)
+            # Udate the Uniform table.
+            dataset.update_uniform_table(i, proportion_condorcet_uni)
             out_f.write(f"Proportion Condorcet: {proportion_condorcet_uni}\n")
             out_f.write("D-TS:\n")
             for comb in combinations_uni:
@@ -343,6 +356,10 @@ def run_multi_simulations(
                 out_f.write(
                     f"\tCombination {comb}: Found effect? {found_effect}\tTest stats: {t_stats}\tp-vals: {p_vals}\n"
                 )
+                # Update the Combination Table.
+                dataset.update_combination_table(i, comb[0], comb[1], found_effect, 1, t_stats, p_vals)
+            # Update the Double Thompson Sampling Table.
+            dataset.update_double_thompson_sampling_table(i, proportion_condorcet_ts, policy_ts.strong_regret, policy_ts.weak_regret)
             out_f.write(f"Proportion Condorcet: {proportion_condorcet_ts}\n")
             out_f.write(f"Strong Regret: {policy_ts.strong_regret}\n")
             out_f.write(f"Weak Regret: {policy_ts.weak_regret}\n\n")
