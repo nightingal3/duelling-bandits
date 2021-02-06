@@ -1,3 +1,6 @@
+from time import sleep
+from tqdm import tqdm
+
 import matplotlib
 
 matplotlib.use("Agg")
@@ -215,8 +218,11 @@ def run_multi_simulations(
 
     # Init a time table for this round of simulations.
     dataset = Dataset()
-
+    pbar = tqdm(total=num_experiments, position=0, leave=True)
+    progress = open("progress.txt", "w")
     for i in range(num_experiments):
+        pbar.update(1)
+        if i % 10 == 0: progress.write(str(i))
         combinations_uni = {
             duel: {
                 "found_effect": 0,
@@ -253,13 +259,25 @@ def run_multi_simulations(
             wins1_uni = policy.wins[action1][action2]
             losses1_uni = policy.wins[action2][action1]
 
-            chisquare_ts = chisquare([wins1_ts, losses1_ts])
+            if wins1_ts == 0 and losses1_ts == 0:
+                # The action1 and action2 are never chosen at the same time.
+                chisquare_ts = [float("NaN"), float("NaN")]
+            else:
+                chisquare_ts = chisquare([wins1_ts, losses1_ts])
+
+
             if chisquare_ts[1] < 0.05:
                 combinations_ts[comb]["found_effect"] = 1
             combinations_ts[comb]["t_stat"] = chisquare_ts[0]
             combinations_ts[comb]["p_val"] = chisquare_ts[1]
 
-            chisquare_uni = chisquare([wins1_uni, losses1_uni])
+
+
+            if wins1_uni == 0 and losses1_uni == 0:
+                # The action1 and action2 are never chosen at the same time.
+                chisquare_uni = [float("NaN"), float("NaN")]
+            else:
+                chisquare_uni = chisquare([wins1_uni, losses1_uni])
             if chisquare_uni[1] < 0.05:
                 combinations_uni[comb]["found_effect"] = 1
             combinations_uni[comb]["t_stat"] = chisquare_uni[0]
@@ -330,39 +348,22 @@ def run_multi_simulations(
         dataset.update_effect_size_table(i, effect_size)
         dataset.update_sample_size_table(i, num_timesteps)
         with open(sim_output_file, "a") as out_f:
-            print(i)
-            out_f.write(f"=== SIMULATION NUMBER {i} === \n")
-            out_f.write(f"Effect size: {effect_size}, Sample size: {num_timesteps}\n")
-            out_f.write("Uniform:\n")
             for comb in combinations_uni:
                 found_effect = combinations_uni[comb]["found_effect"]
                 t_stats = combinations_uni[comb]["t_stat"]
                 p_vals = combinations_uni[comb]["p_val"]
-
-                out_f.write(
-                    f"\tCombination {comb}: Found effect? {found_effect}\tTest stats: {t_stats}\tp-vals: {p_vals}\n"
-                )
                 # Update the Combination Table.
                 dataset.update_combination_table(i, comb[0], comb[1], found_effect, 0, t_stats, p_vals)
             # Udate the Uniform table.
             dataset.update_uniform_table(i, proportion_condorcet_uni)
-            out_f.write(f"Proportion Condorcet: {proportion_condorcet_uni}\n")
-            out_f.write("D-TS:\n")
             for comb in combinations_uni:
                 found_effect = combinations_ts[comb]["found_effect"]
                 t_stats = combinations_ts[comb]["t_stat"]
                 p_vals = combinations_ts[comb]["p_val"]
-
-                out_f.write(
-                    f"\tCombination {comb}: Found effect? {found_effect}\tTest stats: {t_stats}\tp-vals: {p_vals}\n"
-                )
                 # Update the Combination Table.
                 dataset.update_combination_table(i, comb[0], comb[1], found_effect, 1, t_stats, p_vals)
             # Update the Double Thompson Sampling Table.
             dataset.update_double_thompson_sampling_table(i, proportion_condorcet_ts, policy_ts.strong_regret, policy_ts.weak_regret)
-            out_f.write(f"Proportion Condorcet: {proportion_condorcet_ts}\n")
-            out_f.write(f"Strong Regret: {policy_ts.strong_regret}\n")
-            out_f.write(f"Weak Regret: {policy_ts.weak_regret}\n\n")
 
     with open(sim_save_file, "wb") as save_f:
         pickle.dump(duel_log, save_f)
