@@ -219,10 +219,13 @@ def run_multi_simulations(
     # Init a time table for this round of simulations.
     dataset = Dataset()
     pbar = tqdm(total=num_experiments, position=0, leave=True)
-    progress = open("progress.txt", "w")
     for i in range(num_experiments):
         pbar.update(1)
-        if i % 10 == 0: progress.write(str(i))
+        # How to write the progress bar to the txt?
+        if i % 10 == 0: 
+            progress = open("progress.txt", "w")
+            progress.write(str(i))
+            progress.close()
         combinations_uni = {
             duel: {
                 "found_effect": 0,
