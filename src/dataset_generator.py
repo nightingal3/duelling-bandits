@@ -1,6 +1,8 @@
 from time import sleep
 from tqdm import tqdm
 
+import sys
+
 import matplotlib
 
 matplotlib.use("Agg")
@@ -14,7 +16,6 @@ from typing import List
 import seaborn as sns
 from scipy.stats import chisquare
 import pandas as pd
-import pickle
 
 from uniform_sampling_policy import UniformSamplingPolicy
 from double_thompson_sampling import DoubleThompsonSamplingPolicy
@@ -185,18 +186,17 @@ def run_simulation(
         ],
     )
 
-    return effect_size_df, policy, policy_ts, actions_uni, actions_ts, condorcet_winner
+    return effect_size_df, policy, policy_ts, actions_uni, actions_ts, condorcet_winner, sample_size
 
 
 def run_multi_simulations(
     num_experiments: int,
-    sim_output_file: str,
-    sim_save_file: str,
     num_actions: int,
     effect_size: int = 0.3,
     sample_size_multiple: float = 1,
 ) -> None:
     possible_duels = list(combinations(range(num_actions), 2))
+
     duel_log = {
         "uni": {
             "found_effect": [],
@@ -216,12 +216,51 @@ def run_multi_simulations(
         },
     }
 
+    combinations_result = {
+        "ts": {
+            "simulation": [],
+            "first_arm": [],
+            "second_arm": [],
+            "found_effect": [],
+            "t_stats": [],
+            "p_values": [],
+            "final_powers": []
+        },
+        "uni": {
+            "simulation": [],
+            "first_arm": [],
+            "second_arm": [],
+            "found_effect": [],
+            "t_stats": [],
+            "p_values": [],
+            "final_powers": []
+        }
+    }
+
+    ts_result = {
+        "simulation": [],
+        "proportion_condorcet": [],
+        "strong_regret": [],
+        "weak_regret": []
+    }
+
+    uni_result = {
+        "simulation": [],
+        "proportion_condorcet": []
+    }
+
+    env = {
+        "simulation": [],
+        "effect_size": [],
+        "num_actions": []
+    }
+
+
     # Init a time table for this round of simulations.
-    dataset = Dataset()
-    pbar = tqdm(total=num_experiments, position=0, leave=True)
+
+    pbar = tqdm(total = num_experiments, position = 0, leave=True)
     for i in range(num_experiments):
         pbar.update(1)
-        # How to write the progress bar to the txt?
         if i % 10 == 0: 
             progress = open("progress.txt", "w")
             progress.write(str(i))
@@ -249,10 +288,15 @@ def run_multi_simulations(
             for duel in possible_duels
         }
 
-        experiment_results, policy, policy_ts, actions_uni, actions_ts, condorcet_winner = run_simulation(
+        experiment_results, policy, policy_ts, actions_uni, actions_ts, condorcet_winner, sample_size = run_simulation(
             num_actions, effect_size, sample_size_multiple
         )
         num_timesteps = len(actions_uni)
+
+        env['simulation'].append(i)
+        env['effect_size'] = effect_size
+        env['num_actions'] = num_actions
+        env['sample_size'] = sample_size
 
         for comb in possible_duels:
             action1, action2 = sorted(comb)
@@ -339,6 +383,11 @@ def run_multi_simulations(
         duel_log["ts"]["proportion_condorcet"].append(proportion_condorcet_ts)
         duel_log["uni"]["final_power"].append(list(final_effect_size_uni))
         duel_log["ts"]["final_power"].append(list(final_effect_size_ts))
+
+
+        power_over_time_uni['simulation'] = i #Add simulation id to power_over_time dataframe.
+        power_over_time_ts['simulation'] = i #Add simulation id to power_over_time dataframe.
+
         duel_log["uni"]["power_over_time"] = duel_log["uni"]["power_over_time"].append(
             power_over_time_uni
         )
@@ -347,29 +396,44 @@ def run_multi_simulations(
         )
 
         # Write to the pytables.
+        for comb in combinations_uni:
+            found_effect = combinations_uni[comb]["found_effect"]
+            t_stats = combinations_uni[comb]["t_stat"]
+            p_vals = combinations_uni[comb]["p_val"]
+            # Update the Combination Result for Uniform.
+            combinations_result["uni"]["simulation"].append(i)
+            combinations_result["uni"]["first_arm"].append(comb[0])
+            combinations_result["uni"]["second_arm"].append(comb[1])
+            combinations_result["uni"]["found_effect"].append(found_effect)
+            combinations_result["uni"]["t_stats"].append(t_stats)
+            combinations_result["uni"]["p_values"].append(p_vals)
+            combinations_result["uni"]["final_powers"].append(list(final_effect_size_uni)[list(combinations_uni).index(comb)])
 
-        dataset.update_effect_size_table(i, effect_size)
-        dataset.update_sample_size_table(i, num_timesteps)
-        with open(sim_output_file, "a") as out_f:
-            for comb in combinations_uni:
-                found_effect = combinations_uni[comb]["found_effect"]
-                t_stats = combinations_uni[comb]["t_stat"]
-                p_vals = combinations_uni[comb]["p_val"]
-                # Update the Combination Table.
-                dataset.update_combination_table(i, comb[0], comb[1], found_effect, 0, t_stats, p_vals)
-            # Udate the Uniform table.
-            dataset.update_uniform_table(i, proportion_condorcet_uni)
-            for comb in combinations_uni:
-                found_effect = combinations_ts[comb]["found_effect"]
-                t_stats = combinations_ts[comb]["t_stat"]
-                p_vals = combinations_ts[comb]["p_val"]
-                # Update the Combination Table.
-                dataset.update_combination_table(i, comb[0], comb[1], found_effect, 1, t_stats, p_vals)
-            # Update the Double Thompson Sampling Table.
-            dataset.update_double_thompson_sampling_table(i, proportion_condorcet_ts, policy_ts.strong_regret, policy_ts.weak_regret)
+        uni_result["simulation"].append(i)
+        uni_result["proportion_condorcet"].append(proportion_condorcet_uni)
 
-    with open(sim_save_file, "wb") as save_f:
-        pickle.dump(duel_log, save_f)
+
+        # dataset.update_uniform_table(i, proportion_condorcet_uni)
+        for comb in combinations_ts:
+            found_effect = combinations_ts[comb]["found_effect"]
+            t_stats = combinations_ts[comb]["t_stat"]
+            p_vals = combinations_ts[comb]["p_val"]
+            # Update the Combination Table.
+            combinations_result["ts"]["simulation"].append(i)
+            combinations_result["ts"]["first_arm"].append(comb[0])
+            combinations_result["ts"]["second_arm"].append(comb[1])
+            combinations_result["ts"]["found_effect"].append(found_effect)
+            combinations_result["ts"]["t_stats"].append(t_stats)
+            combinations_result["ts"]["p_values"].append(p_vals)
+            combinations_result["ts"]["final_powers"].append(list(final_effect_size_ts)[list(combinations_ts).index(comb)])
+
+        # Update the Double Thompson Sampling Table.
+        ts_result["simulation"].append(i)
+        ts_result["proportion_condorcet"].append(proportion_condorcet_ts)
+        ts_result["strong_regret"].append(policy_ts.strong_regret)
+        ts_result["weak_regret"].append(policy_ts.weak_regret)
+
+        dataset = Dataset("data/output_" + str(effect_size) + "_" + str(num_actions) + "_arms.h5", effect_size, num_actions, combinations_result, duel_log, ts_result, uni_result, env)
 
     print("DONE! :)")
 
@@ -433,20 +497,18 @@ def plot_borda_reward_over_time(
 
 
 if __name__ == "__main__":
-    EFFECT_SIZE = 0.1
-    NUM_ARMS = 3
-    NUM_SIMULATIONS = 1000
+    EFFECT_SIZE = float(sys.argv[2])
+    NUM_ARMS = int(sys.argv[1])
+    NUM_SIMULATIONS = int(sys.argv[3])
     SAMPLE_SIZE_MULT = 1
     print(
         f"EFFECT_SIZE:{EFFECT_SIZE}, NUM ARMS:{NUM_ARMS}, NUM SIMULATIONS:{NUM_SIMULATIONS}, SAMPLE SIZE MULTIPLE:{SAMPLE_SIZE_MULT}"
     )
-    num_duels = len(list(combinations(range(NUM_ARMS), 2)))
+    num_duels = len(list(combinations(range(NUM_ARMS), 2))) # number of possible cominations of duels between two arms, order does't matter. The smaller index is always in 0th index.
 
-    sample_size = estimate_sample_size(NUM_ARMS, effect_size=0.3)
+    sample_size = estimate_sample_size(NUM_ARMS, effect_size=EFFECT_SIZE)
     run_multi_simulations(
         NUM_SIMULATIONS,
-        f"./output_{EFFECT_SIZE}_{NUM_ARMS}_arms.txt",
-        f"res_{EFFECT_SIZE}_{NUM_ARMS}_mult{SAMPLE_SIZE_MULT}.p",
         NUM_ARMS,
         EFFECT_SIZE,
         sample_size_multiple=SAMPLE_SIZE_MULT,
