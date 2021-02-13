@@ -14,6 +14,9 @@ class UniformSamplingPolicy:
         self.rewards_over_time = []
         self.num_actions = preference_matrix.shape[0]
         self.wins = np.zeros((self.num_actions, self.num_actions))
+        self.strong_regret = 0
+        self.weak_regret = 0
+
 
     def choose_actions(self):
         first_action, second_action = choice(
@@ -26,6 +29,11 @@ class UniformSamplingPolicy:
         )
         self.update_borda_reward(first_action, second_action)
         self.update_with_reward(first_action, second_action, reward)
+        self.strong_regret += self.get_epsilon(first_action)
+        self.strong_regret += self.get_epsilon(second_action)
+        self.weak_regret += min(self.get_epsilon(first_action), self.get_epsilon(second_action))
+
+        self.timestep += 1
         return first_action, second_action
 
     def update_with_reward(self, first_action, second_action, reward) -> None:
@@ -58,6 +66,10 @@ class UniformSamplingPolicy:
                 )
 
         return powers
+
+    def get_epsilon(self, action):
+        best_arm = 0 # TODO: 
+        return self.preference_matrix[0][action] - 0.5
 
 
 if __name__ == "__main__":

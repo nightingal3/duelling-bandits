@@ -34,6 +34,8 @@ class DataLoder():
           f.write(f"\tCombination ({combination['first_arm']}, {combination['second_arm']}): Found effect? {combination['found_effect']}\tTest stats: {combination['t_stats']}\tp-vals: {combination['p_values']}\n")
 
         f.write(f"Proportion Condorcet: {uni_result_for_this_sim['proportion_condorcet']}\n")
+        f.write(f"Strong Regret: {uni_result_for_this_sim['strong_regret']}\n")
+        f.write(f"Weak Regret: {uni_result_for_this_sim['weak_regret']}\n\n")
 
 
         f.write("D-TS:\n")

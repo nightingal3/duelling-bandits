@@ -246,7 +246,9 @@ def run_multi_simulations(
 
     uni_result = {
         "simulation": [],
-        "proportion_condorcet": []
+        "proportion_condorcet": [],
+        "strong_regret": [],
+        "weak_regret": []
     }
 
     env = {
@@ -411,7 +413,8 @@ def run_multi_simulations(
 
         uni_result["simulation"].append(i)
         uni_result["proportion_condorcet"].append(proportion_condorcet_uni)
-
+        uni_result["strong_regret"].append(policy.strong_regret)
+        uni_result["weak_regret"].append(policy.weak_regret)
 
         # dataset.update_uniform_table(i, proportion_condorcet_uni)
         for comb in combinations_ts:
@@ -432,6 +435,7 @@ def run_multi_simulations(
         ts_result["proportion_condorcet"].append(proportion_condorcet_ts)
         ts_result["strong_regret"].append(policy_ts.strong_regret)
         ts_result["weak_regret"].append(policy_ts.weak_regret)
+
 
         dataset = Dataset("data/output_" + str(effect_size) + "_" + str(num_actions) + "_arms.h5", effect_size, num_actions, combinations_result, duel_log, ts_result, uni_result, env)
 
