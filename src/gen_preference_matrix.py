@@ -83,7 +83,7 @@ class PreferenceMatrix:
         for j in range(1, self.num_actions):
             random_number = 0.5
             while random_number == 0.5:
-                random_number = np.random.rand()
+                random_number = np.random.beta(2, 5)
             random_number = random_number if random_number > 0.5 else 1 - random_number
             pm_list[0][j] = random_number
             pm_list[j][0] = 1 - random_number
