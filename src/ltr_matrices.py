@@ -7,7 +7,7 @@ arr_condorcet = np.array([
 [0.500, 0.525, 0.613, 0.757, 0.765],
 [0.465, 0.500, 0.580, 0.727, 0.738],
 [0.387, 0.420, 0.500, 0.659, 0.669],
-[0.243, 0.273, 0.341, 0.500 0.510],
+[0.243, 0.273, 0.341, 0.500, 0.510],
 [0.235, 0.262, 0.331, 0.490, 0.500]])
 
 condorcet_ltr = PreferenceMatrix(num_actions=5, data=arr_condorcet)
@@ -23,12 +23,15 @@ arr_non_condorcet = np.array([
 non_condorcet_ltr = PreferenceMatrix(num_actions=5, data=arr_non_condorcet)
 
 # data provided by Zoghi, Karnin, Whiteson and Rijke
-data_path = "data/MSLR_Perfect_PMat.npz"
+data_path = "../data/MSLR_Perfect_PMat.npz"
 
 def get_rankers(N: int = 5) -> PreferenceMatrix:
     full_matrix = np.load(data_path)["PMat"]
     inds = np.random.choice(full_matrix.shape[0], N)
-    submatrix = full_matrix[randInds][:, randInds]
+    print(inds)
+    submatrix = full_matrix[inds][:,inds]
 
     return PreferenceMatrix(num_actions=N, data=submatrix)
 
+if __name__ == "__main__":
+    print(get_rankers(5))
