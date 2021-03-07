@@ -29,9 +29,11 @@ class UniformSamplingPolicy:
         )
         self.update_borda_reward(first_action, second_action)
         self.update_with_reward(first_action, second_action, reward)
-        self.strong_regret += self.get_epsilon(first_action)
-        self.strong_regret += self.get_epsilon(second_action)
-        self.weak_regret += min(self.get_epsilon(first_action), self.get_epsilon(second_action))
+        if not ((first_action == 0 and reward == 1) or (second_action == 0 and reward == 0)):
+            # Only update the regret if the arm chosen is not the condorcet winner.
+            self.strong_regret += self.get_epsilon(first_action)
+            self.strong_regret += self.get_epsilon(second_action)
+            self.weak_regret += min(self.get_epsilon(first_action), self.get_epsilon(second_action))
 
         self.timestep += 1
         return first_action, second_action
@@ -68,8 +70,8 @@ class UniformSamplingPolicy:
         return powers
 
     def get_epsilon(self, action):
-        best_arm = 0 # TODO: 
-        return self.preference_matrix[0][action] - 0.5
+        best_arm = self.preference_matrix.condorcet_winner()
+        return self.preference_matrix[best_arm][action] - 0.5
 
 
 if __name__ == "__main__":

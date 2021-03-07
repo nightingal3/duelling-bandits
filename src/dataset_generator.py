@@ -24,6 +24,8 @@ from dataset import Dataset
 
 import pdb
 
+from ltr_matrices import get_rankers
+
 
 def estimate_sample_size(
     num_actions: int,
@@ -98,15 +100,17 @@ def condorcet_winner_gen(effect_size: float) -> None:
 def run_simulation(
     num_actions: int, effect_size: float = 0.3, sample_size_multiple: float = 1
 ) -> tuple:
-    if effect_size > 0:
-        pm = pref_matrix_from_effect_size(
-            effect_size=effect_size, num_actions=num_actions
-        )
+    # if effect_size > 0:
+    #     pm = pref_matrix_from_effect_size(
+    #         effect_size=effect_size, num_actions=num_actions
+    #     )
 
-        # Comment the following code, if you don't want the winning frequency between the condorcer winnter and other arms to be random.
-        pm.set_matrix_random_with_condorcet_winner(effect_size)
-    else:
-        pm = pref_matrix_no_effect(num_actions)
+    #     # Comment the following code, if you don't want the winning frequency between the condorcer winnter and other arms to be random.
+    #     pm.set_matrix_random_with_condorcet_winner(effect_size)
+    # else:
+    #     pm = pref_matrix_no_effect(num_actions)
+
+    pm = get_rankers(num_actions)
 
     condorcet_winner = pm.condorcet_winner()
     policy = UniformSamplingPolicy(pm)
@@ -263,10 +267,6 @@ def run_multi_simulations(
     pbar = tqdm(total = num_experiments, position = 0, leave=True)
     for i in range(num_experiments):
         pbar.update(1)
-        if i % 10 == 0: 
-            progress = open("progress.txt", "w")
-            progress.write(str(i))
-            progress.close()
         combinations_uni = {
             duel: {
                 "found_effect": 0,
@@ -437,7 +437,7 @@ def run_multi_simulations(
         ts_result["weak_regret"].append(policy_ts.weak_regret)
 
 
-        dataset = Dataset("data/output_" + str(effect_size) + "_" + str(num_actions) + "_arms.h5", effect_size, num_actions, combinations_result, duel_log, ts_result, uni_result, env)
+    dataset = Dataset("data/output_" + str(effect_size) + "_" + str(num_actions) + "_arms.h5", effect_size, num_actions, combinations_result, duel_log, ts_result, uni_result, env)
 
     print("DONE! :)")
 

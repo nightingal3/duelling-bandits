@@ -28,10 +28,11 @@ data_path = "../data/MSLR_Perfect_PMat.npz"
 def get_rankers(N: int = 5) -> PreferenceMatrix:
     full_matrix = np.load(data_path)["PMat"]
     inds = np.random.choice(full_matrix.shape[0], N)
-    print(inds)
     submatrix = full_matrix[inds][:,inds]
 
     return PreferenceMatrix(num_actions=N, data=submatrix)
 
 if __name__ == "__main__":
-    print(get_rankers(5))
+    pm = get_rankers(5)
+    print(pm)
+    print(pm.condorcet_winner())
