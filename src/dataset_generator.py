@@ -57,6 +57,8 @@ def generate_rewards_for_arm(
         threshold = 0.65
     elif effect_size == 0.5:
         threshold = 0.75
+    else:
+        threshold = 0.5 + effect_size / 2
 
     rewards = [
         1 if random.uniform(0, 1) < threshold else 0
@@ -100,22 +102,29 @@ def condorcet_winner_gen(effect_size: float) -> None:
 def run_simulation(
     num_actions: int, effect_size: float = 0.3, sample_size_multiple: float = 1
 ) -> tuple:
-    # if effect_size > 0:
-    #     pm = pref_matrix_from_effect_size(
-    #         effect_size=effect_size, num_actions=num_actions
-    #     )
+    if effect_size is None:
+        pm = get_rankers(num_actions)
+    elif effect_size > 0:
+        pm = pref_matrix_from_effect_size(
+            effect_size=effect_size, num_actions=num_actions
+        )
 
-    #     # Comment the following code, if you don't want the winning frequency between the condorcer winnter and other arms to be random.
-    #     pm.set_matrix_random_with_condorcet_winner(effect_size)
-    # else:
-    #     pm = pref_matrix_no_effect(num_actions)
-
-    pm = get_rankers(num_actions)
+        # Comment the following code, if you don't want the winning frequency between the condorcer winnter and other arms to be random.
+        pm.set_matrix_random_with_condorcet_winner(effect_size)
+    else:
+        pm = pref_matrix_no_effect(num_actions)
 
     condorcet_winner = pm.condorcet_winner()
     policy = UniformSamplingPolicy(pm)
     policy_ts = DoubleThompsonSamplingPolicy(pm)
-    if effect_size > 0:
+    if effect_size is None:
+        differences = abs(pm.data - 0.5)
+        min_effect_size = 2 * np.min(differences[differences != 0])
+        effect_size = min_effect_size
+        sample_size = estimate_sample_size(
+            num_actions=num_actions, effect_size=min_effect_size
+        )
+    elif effect_size > 0:
         sample_size = estimate_sample_size(
             num_actions=num_actions, effect_size=effect_size
         )
@@ -501,16 +510,25 @@ def plot_borda_reward_over_time(
 
 
 if __name__ == "__main__":
-    EFFECT_SIZE = float(sys.argv[2])
-    NUM_ARMS = int(sys.argv[1])
-    NUM_SIMULATIONS = int(sys.argv[3])
+    DATASET = str(sys.argv[1])
+    if(DATASET == "RANDOM"):
+        # The effect size is pre-set.
+        EFFECT_SIZE = float(sys.argv[2])
+        NUM_ARMS = int(sys.argv[3])
+        NUM_SIMULATIONS = int(sys.argv[4])
+    else:
+        EFFECT_SIZE = None # There is no effect size that is pre-set
+        NUM_ARMS = int(sys.argv[2])
+        NUM_SIMULATIONS = int(sys.argv[3])
     SAMPLE_SIZE_MULT = 1
+
     print(
         f"EFFECT_SIZE:{EFFECT_SIZE}, NUM ARMS:{NUM_ARMS}, NUM SIMULATIONS:{NUM_SIMULATIONS}, SAMPLE SIZE MULTIPLE:{SAMPLE_SIZE_MULT}"
     )
     num_duels = len(list(combinations(range(NUM_ARMS), 2))) # number of possible cominations of duels between two arms, order does't matter. The smaller index is always in 0th index.
 
-    sample_size = estimate_sample_size(NUM_ARMS, effect_size=EFFECT_SIZE)
+    # sample_size = estimate_sample_size(NUM_ARMS, effect_size=EFFECT_SIZE)
+    # print(sample_size)
     run_multi_simulations(
         NUM_SIMULATIONS,
         NUM_ARMS,
