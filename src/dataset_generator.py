@@ -148,6 +148,7 @@ def run_simulation(
     actions_ts = []
     actions_uni = []
 
+
     for i in range(int(sample_size * sample_size_multiple)):
         action1, action2 = policy.choose_actions()
         actions_uni.append((action1, action2))
@@ -367,10 +368,11 @@ def run_multi_simulations(
 
         power_over_time_uni = experiment_results.loc[
             experiment_results["sampling_type"] == "uniform"
-        ][["timestep", "power"]]
+        ][["timestep", "power"]].groupby("timestep").mean()
+
         power_over_time_ts = experiment_results.loc[
             experiment_results["sampling_type"] == "thompson_sampling"
-        ][["timestep", "power"]]
+        ][["timestep", "power"]].groupby("timestep").mean()
 
         duel_log["uni"]["found_effect"].append(
             [combinations_uni[comb]["found_effect"] for comb in combinations_uni]
