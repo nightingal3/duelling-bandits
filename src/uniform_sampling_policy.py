@@ -63,6 +63,7 @@ class UniformSamplingPolicy:
         powers = []
         for action1 in range(self.num_actions):
             for action2 in range(action1 + 1, self.num_actions):
+                if(effect_size is None): effect_size = 2 * abs(self.preference_matrix.data[action1][action2] - 0.5)
                 powers.append(
                     (self.get_power(effect_size, action1, action2), action1, action2)
                 )

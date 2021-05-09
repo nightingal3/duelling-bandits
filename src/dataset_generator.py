@@ -46,6 +46,28 @@ def estimate_sample_size(
     return total_sample_size
 
 
+def estimate_sample_size_in_total(
+    pm: PreferenceMatrix,
+    num_actions: int,
+    effect_size_threshold: float = 0.8,
+    significance_threshold: float = 0.05,
+) -> float:
+    total_sample_size = 0
+    power_analysis = GofChisquarePower()  # is this the right power analysis?
+    rewards = {}
+    for i in range(0, num_actions):
+        for j in range(i + 1, num_actions):
+            effect_size = 2 * abs(pm.data[i][j] - 0.5)
+            sample_size = power_analysis.solve_power(
+                effect_size=effect_size,
+                power=effect_size_threshold,
+                alpha=significance_threshold,
+                n_bins=2,
+            )
+            total_sample_size += sample_size
+    return total_sample_size
+
+
 def generate_rewards_for_arm(
     effect_size: float, sample_size: int, sample_size_multiple: float = 1
 ) -> List:
@@ -114,30 +136,40 @@ def run_simulation(
     else:
         pm = pref_matrix_no_effect(num_actions)
 
+    combs = list(combinations(range(num_actions), 2))
     condorcet_winner = pm.condorcet_winner()
     policy = UniformSamplingPolicy(pm)
     policy_ts = DoubleThompsonSamplingPolicy(pm)
     if effect_size is None:
-        differences = abs(pm.data - 0.5)
-        min_effect_size = 2 * np.min(differences[differences != 0])
-        effect_size = min_effect_size
-        sample_size = estimate_sample_size(
-            num_actions=num_actions, effect_size=min_effect_size
+        sample_size = estimate_sample_size_in_total(
+            pm = pm, num_actions=num_actions
         )
+
+        # convention: 1 means the victory of the arm with the lowest index
+        rewards = {
+            combination: generate_rewards_for_arm(2 * abs(pm.data[combination[0]][combination[1]] - 0.5), sample_size)
+            for combination in combs
+        }        
     elif effect_size > 0:
         sample_size = estimate_sample_size(
             num_actions=num_actions, effect_size=effect_size
         )
+        # convention: 1 means the victory of the arm with the lowest index
+        rewards = {
+            combination: generate_rewards_for_arm(effect_size, sample_size)
+            for combination in combs
+        }
     else:
         sample_size = estimate_sample_size(num_actions=num_actions, effect_size=0.3)
-    combs = list(combinations(range(num_actions), 2))
+
+        # convention: 1 means the victory of the arm with the lowest index
+        rewards = {
+            combination: generate_rewards_for_arm(effect_size, sample_size)
+            for combination in combs
+        }
 
 
-    # convention: 1 means the victory of the arm with the lowest index
-    rewards = {
-        combination: generate_rewards_for_arm(effect_size, sample_size)
-        for combination in combs
-    }
+
     num_duels = {combination: 0 for combination in combs}
     num_duels_ts = {combination: 0 for combination in combs}
     effect_size_over_time = []
